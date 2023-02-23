@@ -27,6 +27,5 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
 
-      - run: |
-        aws s3 ls
-        aws s3 ls
+      - name: AWS S3 LS Step 1
+        run: aws s3 ls s3://kikuchi-test-20230223
