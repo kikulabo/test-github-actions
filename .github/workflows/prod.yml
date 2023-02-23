@@ -29,8 +29,10 @@ jobs:
 
       - name: SSH into instance using Session Manager
         run: |
-          INSTANCE_ID=i-01e16ebcbac5d6bef
-          aws ssm start-session --target $INSTANCE_ID --region ap-northeast-1 
-          cd
-          touch test
+          mkdir ~/.ssh
+          chmod 700 .ssh
+          echo "host i-* mi-*\n    ProxyCommand sh -c \"aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ap-northeast-1\"" >> ~/.ssh/config
+          echo ${{ env.AWS_REGION }} > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -i ~/.ssh/id_rsa ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
           exit
