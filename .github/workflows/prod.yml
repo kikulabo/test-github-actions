@@ -32,7 +32,10 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo "host i-* mi-*\n    ProxyCommand sh -c \"aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ap-northeast-1\"" >> ~/.ssh/config
-          echo ${{ env.AWS_REGION }} > ~/.ssh/id_rsa
+          cat ~/.ssh/config
+          echo ${{ secrets.KNOWN_HOSTS }} > ~/.ssh/known_hosts
+          chmo 600 ~/.ssh/known_hosts
+          echo ${{ secrets.SSH_KEY }} > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh -i ~/.ssh/id_rsa ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
           exit
