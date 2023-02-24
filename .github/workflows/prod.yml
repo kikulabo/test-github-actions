@@ -40,7 +40,7 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" | envsubst > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
           scp -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" \
-          -i ~/.ssh/stg-hackermeshi.pem ~/tmp/test ec2-user@${{ vars.STG_INSTANCE_ID }}:~/
+          -i ~/.ssh/id_rsa ~/tmp/test ec2-user@${{ vars.STG_INSTANCE_ID }}:~/
           ssh -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" \
           -i ~/.ssh/id_rsa ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
           exit
