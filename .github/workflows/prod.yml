@@ -10,9 +10,8 @@ env:
   AWS_REGION: ap-northeast-1
   AWS_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDC
 
-
 jobs:
-  s3ls:
+  deploy:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true
     permissions:
@@ -22,18 +21,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - uses: aws-actions/configure-aws-credentials@v1-node16
+      - name: Setup AWS
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
 
-      - name: test file
-        run: |
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+
+      - name: Dotnet version
+        run: dotnet --version
+
+      - name: Dotnet publish
           mkdir -p ~/tmp
           echo "GitHubActions Test" > ~/tmp/test
-          exit
+          ls
 
-      - name: SSH into instance using Session Manager
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
@@ -41,8 +48,13 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           echo "${{ secrets.SSH_KEY }}" | envsubst > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
+
+      - name: Upload ec2
+        run: |
           scp -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" \
           -i ~/.ssh/id_rsa ~/tmp/test ec2-user@${{ vars.STG_INSTANCE_ID }}:~/
           ssh -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" \
           -i ~/.ssh/id_rsa ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
-          exit
+
+      - name: Restart dotnet
+        run: sudo ls /
