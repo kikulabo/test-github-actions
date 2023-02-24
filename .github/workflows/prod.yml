@@ -28,8 +28,10 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
 
       - name: test file
+        run: |
           mkdir -p ~/tmp
           echo "GitHubActions Test" > ~/tmp/test
+          exit
 
       - name: SSH into instance using Session Manager
         run: |
