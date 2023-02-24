@@ -36,6 +36,7 @@ jobs:
         run: dotnet --version
 
       - name: Dotnet publish
+        run: |
           mkdir -p ~/tmp
           echo "GitHubActions Test" > ~/tmp/test
           ls
