@@ -37,5 +37,5 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           echo "${{ secrets.SSH_KEY }}" | envsubst > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -p 22 -i ~/.ssh/id_rsa ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
+          ssh -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" -i ~/.ssh/stg-hackermeshi.pem ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
           exit
