@@ -3,10 +3,8 @@ name: Production Deploy
 on:
   pull_request:
     branches:
-      - main
-    types:
-      - opened
-      - synchronize
+      - master
+    types: [closed]
 
 env:
   AWS_REGION: ap-northeast-1
@@ -49,7 +47,6 @@ jobs:
           }
           EOF
           }
-          echo "$(generate_post_data)"
           curl -H "Content-Type: application/json" -X POST -d "$(generate_post_data)" ${{ secrets.DISCORD_WEBHOOK }}
         env:
           GH_TOKEN: ${{ github.token }}
