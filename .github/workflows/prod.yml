@@ -4,7 +4,9 @@ on:
   pull_request:
     branches:
       - main
-    types: [closed]
+    types:
+      - opened
+      - synchronize
 
 env:
   AWS_REGION: ap-northeast-1
@@ -18,44 +20,37 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup AWS
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 7.0.x
-
-      - name: Dotnet version
-        run: dotnet --version
-
-      - name: Dotnet publish
+      - name: Discord Message Notify
+        if: always()
         run: |
-          mkdir -p ~/tmp
-          echo "GitHubActions Test" > ~/tmp/test
-          ls
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.KNOWN_HOSTS }}" | envsubst > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-          echo "${{ secrets.SSH_KEY }}" | envsubst > ~/.ssh/id_rsa
-          chmod 400 ~/.ssh/id_rsa
-
-      - name: Upload ec2
-        run: |
-          scp -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" \
-          -i ~/.ssh/id_rsa ~/tmp/test ec2-user@${{ vars.STG_INSTANCE_ID }}:~/
-          ssh -o ProxyCommand="sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --region ${{ env.AWS_REGION }}'" \
-          -i ~/.ssh/id_rsa ec2-user@${{ vars.STG_INSTANCE_ID }} 'ls'
-
-      - name: Restart dotnet
-        run: sudo ls /
+          cat <<EOF > ./tmp_pull_request
+          ${{ github.event.pull_request.body }}
+          EOF
+          NUMBERS=$(grep -o '[0-9]*' ./tmp_pull_request)
+          discord_output="-----------------------"
+          for number in $NUMBERS; do
+              pr_data=$(gh pr view $number --json title,body)
+              title=$(echo "$pr_data" | jq -r '.title')
+              discord_output="$discord_output\n#$number: $title"
+          done
+          discord_output="$discord_output\n-----------------------\n"
+          color=45973
+          if [ ${{ job.status }} = "failure" ]; then
+            color="15548997"
+          fi
+          generate_post_data() {
+            cat <<EOF
+          {
+            "content": "**${{ job.status }}** 🚀 PR Merged **hacker-meshi-core** release → master",
+            "embeds": [{
+              "title": "${{ github.event.pull_request.title }}",
+              "description": "${discord_output}",
+              "color": "${color}"
+            }]
+          }
+          EOF
+          }
+          echo "$(generate_post_data)"
+          curl -H "Content-Type: application/json" -X POST -d "$(generate_post_data)" ${{ secrets.DISCORD_WEBHOOK }}
+        env:
+          GH_TOKEN: ${{ github.token }}
