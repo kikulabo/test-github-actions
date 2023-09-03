@@ -3,7 +3,7 @@ name: Production Deploy
 on:
   pull_request:
     branches:
-      - master
+      - main
     types: [closed]
 
 env:
